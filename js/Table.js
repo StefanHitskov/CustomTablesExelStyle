@@ -1,14 +1,14 @@
 //Инициализация
 function createTable(selector) {
 
-    var containerSelector = selector;
 
-    var cellsArray = [];
 
     var table;
 
 
     return new function () {
+        var cellsArray = [];
+
         this.addCell = function (cell) {
             cellsArray.push(cell);
             return this;
@@ -40,12 +40,12 @@ function createTable(selector) {
         table.addMouseListener(function (event, elem) {
             console.log(elem);
             //if (!elem.isEdit) {
-                try {
+
                     var success = table.setSelection(elem);
                     if (success || success == undefined) {
-                        elem.action(event);
+                        //elem.action(event);
+                        table.action(event, elem);
                     }
-                }catch (e){} //invalid value
             //}
         });
 
@@ -88,7 +88,8 @@ function createTable(selector) {
         table.addKeyListener(function (event, elem) {
             if (event.keyCode == 13 && !event.ctrlKey) {
 
-                elem.action(event);
+                table.action(event, elem);
+                //elem.action(event);
 
             }
         });
@@ -245,9 +246,20 @@ function createTable(selector) {
             return this.rows[row].getElem(col);
         };
 
-        Table.prototype.action = function (event) {
+        Table.prototype.action = function (event, elem) {
             //for (var i = 0; i < this.inputActions.length && !this.inputActions[i](elem); i++);
-            if(this.selected) this.selected.action(event);
+            try{
+                elem = elem || this.selected;
+                if(elem) elem.action(event);
+            } catch (e){
+                if(e == 'invalid'){
+                    return false;
+                } else {
+                    throw e;
+                }
+
+            }
+
         };
 
         Table.prototype.moveToStart = function () {
