@@ -2,20 +2,43 @@
 function createTable(selector) {
 
 
-
     var table;
 
 
     return new function () {
         var cellsArray = [];
 
+        var onDelete = function () {
+
+        };
+
+        var onChange = function () {
+
+        };
+
         this.addCell = function (cell) {
             cellsArray.push(cell);
             return this;
         };
 
+        this.delete = function (func) {
+            if (typeof func == 'function') {
+                onDelete = func;
+            }
+            return this;
+        };
+
+        this.change = function (func){
+            if (typeof func == 'function') {
+                onChange = func;
+            }
+            return this;
+        };
+
         this.build = function () {
             table = new Table(selector, cellsArray);
+            table.onDelete = onDelete;
+            table.onChange = onChange;
             table.init();
             setEvents();
             //Убираем возможность повторной инициализации
@@ -38,42 +61,59 @@ function createTable(selector) {
     function setListeners() {
         //Выбор мышкой
         table.addMouseListener(function (event, elem) {
-            console.log(elem);
             //if (!elem.isEdit) {
-
+            //if (!elem.isEdit) {
+            event.preventDefault();
+                if (table.selected == elem) {
+                    table.action(event, elem);
+                } else {
                     var success = table.setSelection(elem);
-                    if (success || success == undefined) {
-                        //elem.action(event);
-                        table.action(event, elem);
-                    }
+                }
+
+            return false;
+            //}
+
+            //if (success || success == undefined) {
+            //    //elem.action(event);
+            //    table.action(event, elem);
+            //}
             //}
         });
 
         ////Перемещение
         table.addKeyListener(function (event, elem) {
+            if(!elem) return;
             if (elem.isEdit) return;
-            switch (event.keyCode) {
-                case 37:
-                    table.moveTo('left');
-                    break;
-                case 38:
-                    table.moveTo('up');
-                    break;
-                case 39:
-                    table.moveTo('right');
-                    break;
-                case 40:
-                    table.moveTo('down');
-                    break;
+
+            if(event.keyCode >= 37 && event.keyCode <= 40){
+                event.preventDefault();
+                //event.preventBubble();
+                //event.stopPropagation();
+                switch (event.keyCode) {
+                    case 37:
+                        table.moveTo('left');
+                        break;
+                    case 38:
+                        table.moveTo('up');
+                        break;
+                    case 39:
+                        table.moveTo('right');
+                        break;
+                    case 40:
+                        table.moveTo('down');
+
+                        break;
+                }
             }
+
         });
 
         //переход по ctrl + enter
         table.addKeyListener(function (event, elem) {
             if (event.ctrlKey && event.keyCode === 13) {
-                console.log(elem.coords().top() + " " + table.rows.length);
+
                 var success = table.setSelection(elem);
-                if(success || success == undefined){
+                if (success || success == undefined) {
                     if (elem.coords().top() == table.rows.length - 1) {
                         table.addRow();
                     }
@@ -90,9 +130,14 @@ function createTable(selector) {
 
                 table.action(event, elem);
                 //elem.action(event);
-
             }
         });
+        table.addKeyListener(function(event, elem){
+            if(event.keyCode == 46){
+                elem.row.delete();
+            }
+            //console.log(event.keyCode);
+        })
     }
 
     function Table(selector, cells) {
@@ -102,7 +147,6 @@ function createTable(selector) {
         this.inputActions = [];
         var self = this;
 
-        console.log(this.mouseControllers);
 
         this.html = $('<table border="1" class="mi-mi-table"></table>');
         this.rows = [];
@@ -126,7 +170,7 @@ function createTable(selector) {
 
             this.cells.push({
                 type: 'delete',
-                edit: false,
+                edit: true,
                 required: false,
                 text: "Удалить",
                 input: {
@@ -135,7 +179,12 @@ function createTable(selector) {
                 },
                 action: 'delete',
                 visible: true,
-                default: 'Del'
+                default: 'Del',
+                validate: function (data) {
+
+                    self.rows[data['index']].delete();
+
+                }
             });
 
             var row = $('<tr></tr>');
@@ -152,7 +201,7 @@ function createTable(selector) {
             this.addRow();
             //selected = rows[0].getElem(0);
             this.setSelection(this.rows[0].getElem(0));
-            //console.log(rows[0]);
+
 
             Table.prototype.init = function () {
                 throw new Error('table is already init');
@@ -181,26 +230,29 @@ function createTable(selector) {
         };
 
         Table.prototype.setSelection = function (elem) {
-            //console.log(elem);
+
             try {
 
                 if (this.selected) {
-                    this.selected.onLeave();
+                    var result = this.selected.onLeave();
+                    if(result === false) return;
                     this.html.find('th, td').removeClass('select');
 
                 }
                 if (elem) {
                     elem.onSelect();
                     var coords = elem.coords();
-                    console.log(coords.toString());
+
                     this.html.find('th:nth-child(' + (coords.left() + 2) + '), tr:nth-child(' + (coords.top() + 2) + ') td:first-child').addClass('select');
+                    elem.focus();
                 }
 
                 this.selected = elem;
+
             } catch (e) {
                 if (e == 'invalid') {
                     this.selected.focus();
-                    //console.log('ne');
+
                     return false;
                 } else {
                     throw e;
@@ -248,11 +300,11 @@ function createTable(selector) {
 
         Table.prototype.action = function (event, elem) {
             //for (var i = 0; i < this.inputActions.length && !this.inputActions[i](elem); i++);
-            try{
+            try {
                 elem = elem || this.selected;
-                if(elem) elem.action(event);
-            } catch (e){
-                if(e == 'invalid'){
+                if (elem) elem.action(event);
+            } catch (e) {
+                if (e == 'invalid') {
                     return false;
                 } else {
                     throw e;
@@ -271,7 +323,7 @@ function createTable(selector) {
     function Row(idx, table) {
 
         this.elements = [];
-        this.html = $('<tr><td>' + idx + '</td></tr>');
+        this.html = $('<tr><td>' + (idx + 1) + '</td></tr>');
         this.idx = idx;
         //this.cells = cells;
         //this.rows = rows;
@@ -280,7 +332,7 @@ function createTable(selector) {
 
         for (var i = 0; i < table.cells.length; i++) {
             var elem = new Elem(table.cells[i], i, this);
-            //console.log(elem.toString());
+
             this.elements.push(elem);
         }
 
@@ -299,7 +351,7 @@ function createTable(selector) {
         };
 
         Row.prototype.getElem = function (index) {
-            //console.log(this.elements[index]);
+
             return this.elements[index];
         };
 
@@ -309,17 +361,19 @@ function createTable(selector) {
 
         Row.prototype.foreach = function (func) {
             if (typeof func == 'function') {
-                for (var i = 0; i < this.elements.length; i++) {
+                for (var i = 0; i < this.elements.length - 1; i++) {
                     func(this.elements[i]);
                 }
             }
         };
 
         Row.prototype.getAllData = function () {
-            var result = {};
+            var result = {
+                'index' : this.idx
+            };
             this.foreach(function (e) {
                 result[e.cell.type] = e.getValue();
-            })
+            });
             return result;
         };
 
@@ -335,6 +389,39 @@ function createTable(selector) {
             return res;
         };
 
+        Row.prototype.delete = function (){
+            //this.table.moveTo('down');
+            if(this.table.rows.length > 1){
+                if(this.idx < this.table.rows.length - 1){
+                    this.table.moveTo('down');
+                } else {
+                    this.table.moveTo('up');
+                }
+                this.table.rows.splice(this.idx ,1);
+
+                this.html.remove();
+                for(var i = 0; i < this.table.rows.length; i++){
+                    this.table.rows[i].setIdx(i);
+                }
+
+                this.table.onDelete(this.idx);
+            }
+        };
+
+        Row.prototype.setIdx = function (idx){
+            this.idx = idx;
+            this.html.find('td:first-child').html(idx + 1);
+        }
+
+        Row.prototype.update = function (data){
+            console.log(this.elements);
+            for(var i = 0; i < this.elements.length; i++){
+                var e = this.elements[i];
+                e.setValue(data[e.cell.type]);
+            }
+        }
+
+
     }
 
     function Elem(cell, idx, row) {
@@ -347,6 +434,7 @@ function createTable(selector) {
         this.cell = cell;
         this.idx = idx;
         this.row = row;
+        var self = this;
 
 
         this.row.html.append(this.html);
@@ -386,38 +474,56 @@ function createTable(selector) {
                             this.data = this.inp.val();
                             this.inp.detach();
                             this.html.html(this.data);
-
-
                         };
 
+                        this.setValue0 = function (value){
+                            this.data = value;
+                            this.html.html(value);
+                        };
+
+                        //checkbox
                     } else if (type == 'checkbox') {
-                        this.inp = $('<input type="checkbox">');
+
+                        //Запиливаем свой чекбокс, что бы не бороться с поведением стандартного
+
+                        this.checkbox = new Checkbox(this.cell.input.attrs.checked);
+                        this.inp = this.checkbox.html();
+                        this.html.append(this.inp);
 
                         this.getValue0 = function () {
-                            return $(this.inp).prop('checked');
+                            return this.checkbox.status;
+                        };
+
+                        this.action0 = function (event) {
+                            this.isEdit = true;
+
+                            this.edit();
+                            this.save();
+                            this.isEdit = false;
+
                         };
 
                         this.edit0 = function () {
-                            $(this.inp).prop('checked', !$(this.inp).prop('checked'));
+                            this.checkbox.action();
+
                         };
 
-                        this.save0 = function (){
-                            console.log('save');
-                            this.html.removeClass('error');
+                        this.save0 = function () {
+
                         };
 
-                        this.action0 = function (event){
-                            this.isEdit = true;
-                            console.log('action');
-                            if(event.type != 'click'){
-                                this.edit();
+                        this.setValue0 = function (value){
+                            this.data = value;
+                            //this.html.html(value);
+                            if(value === true){
+                                this.checkbox.switch('right');
+                            } else if(value === false){
+                                this.checkbox.switch('left');
                             }
-                            this.save();
-                            this.isEdit = false;
                         };
 
-                        this.html.append(this.inp);
 
+                        //only remove
                     } else if (type == 'button') {
                         this.inp = $('<input type="button">');
 
@@ -426,16 +532,12 @@ function createTable(selector) {
                         };
 
                         this.edit0 = function () {
-
+                            this.validate();
                         };
 
-                        this.save0 = function () {
-
-                        };
-
-                        this.validate0 = function () {
-                            return true;
-                        };
+                        //this.validate0 = function () {
+                        //    return true;
+                        //};
                         this.html.append(this.inp);
                     } else {
                         throw new Error('unknown type ' + type + ' for input');
@@ -444,6 +546,60 @@ function createTable(selector) {
 
                 case 'select':
                     //select
+
+                    this.inp = $('<select></select>');
+                    //this.data = 1;
+
+                    this.inp.change(function(e){
+                        self.isEdit = true;
+                        self.save();
+                        self.isEdit = false;
+                    });
+
+
+                    for(var i = 0; i < this.cell.input.options.length; i++){
+                        this.inp.append('<option>' + this.cell.input.options[i] + '</option>');
+                    }
+                    this.inp.hide();
+                    this.html.append('<p>' + this.cell.input.options[0] + '</p>');
+                    this.html.append(this.inp);
+
+
+                    this.focus0 = function (){
+                        //this.isEdit = true;
+                        var val = this.html.find('p').html('');
+                        this.inp.find('option[value="' + val + '"]').attr('selected', 'selected');
+                        //this.html.append(this.inp);
+                        this.inp.show();
+                        this.inp.focus();
+                    };
+
+                    this.onLeave0= function (event){
+                        //if(this.inp.is(':focus')) return false;
+                        var val = this.inp.find('option:selected').val();
+                        this.html.find('p').html(val);
+
+                        this.inp.hide();
+                        //this.inp.blur();
+                        //this.inp.attr('disabled', 'disabled');
+                    };
+
+                    this.getValue0 = function (){
+                        return this.inp.find('option:selected').val();
+                    };
+
+                    this.action0 = function (){
+                        this.inp.focus();
+                        //if(this.inp.is(':focus')){
+                        //    this.inp.blur();
+                        //} else {
+                        //    this.inp.focus();
+                        //}
+                    };
+
+                    this.setValue0 = function (value){
+
+                    };
 
 
                     break;
@@ -457,12 +613,12 @@ function createTable(selector) {
                 throw new Error('cell must be non-editable or contains property "input"');
             } else {
 
-                this.action0 = function (event){
-                    console.log(event);
+                this.action0 = function (event) {
+
                     this.row.table.moveTo('right');
-                    if(event.type == 'click'){
-                        this.row.table.action(event);
-                    }
+                    //if(event.type == 'click'){
+                    //    this.row.table.action(event);
+                    //}
                 };
             }
 
@@ -477,8 +633,19 @@ function createTable(selector) {
         }
 
         Elem.prototype.onLeave = function (event) {
-            this.save();
-            this.html.removeClass('active').removeClass('disable');
+            if(this.onLeave0 != undefined){
+                var leave = this.onLeave0(event);
+            } else {
+                leave = true;
+            }
+            if(leave || leave == undefined){
+                if (this.isEdit) {
+                    this.save();
+                }
+                this.html.removeClass('active').removeClass('disable');
+            }
+            return leave;
+
         };
 
         Elem.prototype.focus = function () {
@@ -486,48 +653,78 @@ function createTable(selector) {
         }
 
         Elem.prototype.getValue = function () {
-            return this.getValue0 == undefined ? undefined : this.getValue0();
+            return this.getValue0 == undefined ? this.data : this.getValue0();
         };
 
         Elem.prototype.edit = function () {
             return this.edit0 == undefined ? undefined : this.edit0();
         };
+        //
+        //Elem.prototype.save = function () {
+        //
+        //    if (this.save0 != undefined) {
+        //        console.log(this.isEdit);
+        //        if (this.isEdit) {
+        //            console.log('save');
+        //            if (this.validate()) {
+        //                return this.save0();
+        //            } else {
+        //                this.html.addClass('error');
+        //                throw 'invalid';
+        //            }
+        //        }
+        //    } else {
+        //        return undefined;
+        //    }
+        //    //return this.save0 == undefined ? undefined : this.save0();
+        //};
+
 
         Elem.prototype.save = function () {
-            if (this.save0 != undefined) {
-                if (this.isEdit) {
-                    if (this.validate()) {
-                        return this.save0();
-                    } else {
-                        this.html.addClass('error');
-                        throw 'invalid';
-                    }
+
+            if (this.isEdit) {
+
+                if (this.validate()) {
+                    this.html.removeClass('error');
+
+                    return this.save0 == undefined ? true : this.save0();
+                } else {
+                    this.html.addClass('error');
+                    throw 'invalid';
                 }
-            } else {
-                return undefined;
             }
+
             //return this.save0 == undefined ? undefined : this.save0();
         };
 
         Elem.prototype.validate = function () {
-            console.log('validate');
-            //return this.validate0 == undefined ? true : this.validate0();
-            if(this.validate0 != undefined){
-                return this.validate0();
-            } else {
+
+            //if (this.validate0 != undefined) {
+            //    return this.validate0();
+            //} else {
+            var data = this.row.getAllData();
                 var valid;
                 if (this.cell.validate) {
-                    valid = this.cell.validate(this.row.getAllData());
+
+                    valid = this.cell.validate(data);
                 } else {
                     valid = true;
                 }
-                return valid == undefined ? true : valid;
-            }
+
+                valid = valid == undefined ? true : valid;
+
+                if(valid && this.cell.type != 'delete'){
+                    this.row.update(data);
+                    table.onChange(data);
+                    console.log(data);
+                }
+                return valid;
+            //}
 
         };
 
         Elem.prototype.onSelect = function (event) {
-            //console.log(res);
+
             this.html.addClass('active');
             if (!this.cell.edit) {
                 this.html.addClass('disable');
@@ -539,12 +736,14 @@ function createTable(selector) {
         };
 
         Elem.prototype.action = function (event) {
-            console.log(event.type);
+
             if (this.action0 == undefined) {
+
                 if (!this.isEdit) {
                     this.edit();
                 } else {
                     //this.save();
+
                     this.row.table.moveTo('right');
                 }
             } else {
@@ -583,6 +782,16 @@ function createTable(selector) {
         Elem.prototype.toString = function () {
             return this.cell.text + " " + this.data;
         }
+
+        Elem.prototype.setValue = function (value){
+            console.log(this.cell.type + " " + value);
+            if(this.setValue0) {
+                this.setValue0(value);
+            } else {
+                this.data = value;
+                this.html.html(value);
+            }
+        }
     }
 
     function Coords(col, row) {
@@ -605,4 +814,91 @@ function createTable(selector) {
         //th.attr('data-type', cell.type);
         return th;
     }
+
+
+    function Checkbox(status) {
+        this.status = !!status;
+        this.checkbox = get(status);
+
+
+        this.action = function () {
+            if (this.status) {
+                this.switch('left');
+            } else {
+                this.switch('right');
+            }
+            this.status = !this.status;
+        };
+
+        this.switch = function (side) {
+            if (side == 'left') {
+                this.checkbox.find('.chb-in div').html('off').animate({'left': 0}, function () {
+                    $(this).parent().css({'background-color': 'white'});
+                });
+            } else if (side == 'right') {
+                this.checkbox.find('.chb-in div').html('on').animate({'left': 18}, function () {
+
+                    $(this).parent().css({'background-color': 'green'});
+                });
+            }
+        };
+
+        this.checked = function () {
+            return this.status;
+        };
+
+        this.html = function () {
+            return this.checkbox;
+        };
+
+        function get() {
+            var checkbox = $('<div class="checkbox-custom"></div>');
+            checkbox.css({
+                'height': '100%',
+                'position': 'relative',
+                'cursor': 'pointer'
+            });
+
+            var cont = $('<div class="chb-in"></div>').css({
+                'position': 'absolute',
+                'margin': 'auto',
+                'top': 0,
+                'bottom': 0,
+                'width': '40px',
+                'height': '15px',
+                'left': 0,
+                'right': 0,
+                'border-radius': '10px',
+                'box-shadow': '0 0 3px 0px inset'
+
+            });
+            //var left = status ? 18 : 0;
+
+            var but = $('<div></div>').css({
+                'position': 'absolute',
+                'left': '0px',
+                'height': '13px',
+                'width': '20px',
+                'background-color': 'white',
+                'border-radius': '10px',
+                'border': '1px solid #B9B9B9',
+                'font-size': '10px',
+                'text-align': 'center'
+            });
+
+            checkbox.append(cont.append(but));
+            return checkbox;
+        }
+
+        if (status) {
+            this.switch('right');
+        }
+
+        //this.checkbox.click(function(){
+        //    this.action();
+        //});
+
+
+    }
+
 }

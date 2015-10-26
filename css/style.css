@@ -11,6 +11,11 @@ div.fast_input td {
     padding: 0;
 }
 
+div.fast_input td p{
+    padding: 0;
+    margin: 0;
+}
+
 table.mi-mi-table th {
     border: medium none;
 }
@@ -25,9 +30,13 @@ table.mi-mi-table td.active{
 
 /*div.fast_input td.active.ch{*/
 
-table.mi-mi-table td.active input{
+table.mi-mi-table td.active input, table.mi-mi-table td.active select{
     background-color: rgba(118, 118, 255, 0.73);
 }
+table.mi-mi-table td.active select option {
+    background-color: white;
+}
+
 
 table.mi-mi-table td.edit.error input{
     background-color: red;
@@ -76,7 +85,7 @@ table.mi-mi-table td:first-child, div.fast_input th:first-child{
     text-align: center;
 }
 
-table.mi-mi-table td input {
+table.mi-mi-table td input, table.mi-mi-table td select {
     border: 0px none;
     height: 100%;
     padding: 0px;

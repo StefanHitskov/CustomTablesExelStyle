@@ -12,132 +12,12 @@ var maxThickness = 60;
 var indenCrosslinking = 5;
 var minThicknessForStaple = 10;
 
-function eventOnChange(id) {
-
+function eventOnChange() {
+    console.log('eventOnChange');
 }
 //stubs-end
 
 function initTable() {
-
-    //Создать таблицу в элементе
-    //аргумент - селектор
-
-
-    /*
-     type: 'name',      //обязательно
-     edit: true,        //обязательно
-     required: false,   //обязательно
-     text: 'Название',  //обязательно
-     input: {           //не обязательно
-         tag : 'input',
-         type: 'text'
-
-     },
-     visible: false,     //обязательно
-     default : 2,        //не обязательно
-     change : function(elem){
-        console.log(this.type);
-     },
-     validate : function(elem){
-        return true;
-     },
-     errorMsg : 'ERROR',
-
-     */
-
-    //Добавить ячейку
-
-    createTable('.fast_input').addCell({
-        type: 'name',      //обязательно
-        edit: true,        //обязательно
-        required: false,   //обязательно
-        text: 'Название',  //обязательно
-        input: {           //не обязательно
-            tag : 'input',
-            type: 'text'
-        },
-        validate : function(){
-            return true;
-        },
-        visible: false     //обязательно
-    }).addCell({
-        type: 'width',
-        edit: true,
-        required: true,
-        text: 'Длинна(w)',
-        input: {
-            tag : 'input',
-            type: 'number'
-        },
-        visible: false
-    }).addCell({
-        type: 'height',
-        edit: true,
-        required: true,
-        text: 'Ширина(h)',
-        input: {
-            tag : 'input',
-            type: 'number'
-        },
-        visible: false
-    }).addCell({
-        type: 'thickness',
-        edit: false,
-        required: true,
-        text: 'Толщина',
-        default : 10,
-        visible: false
-    }).addCell({
-        type: 'count',
-        edit: true,
-        required: true,
-        text: 'Кол-во',
-        input: {
-            tag : 'input',
-            type: 'number'
-        },
-        visible: false,
-        default: 1,
-        validate : function (data){
-            console.log(data);
-            if(data['count'] < 1){
-                return false;
-            }
-        }
-        //validate : function(elem, row){
-        //    //console.log(row);
-        //    console.log(width.getElem(row).html());
-        //    return elem.find('input').val() > 0;
-        //}
-    }).addCell({
-        type: 'staple',
-        edit: true,
-        required: true,
-        text: 'Кратность',
-        input: {
-            tag : 'input',
-            type: 'number'
-        },
-        visible: false
-    }).addCell({
-        type: 'test',
-        edit: true,
-        required: true,
-        text: 'test',
-        input: {
-            tag : 'input',
-            type: 'checkbox',
-            attrs :{
-                checked : 'checked'
-            }
-        },
-        visible: true,
-        default : 'on',
-        validate : function (data){
-            console.log(data['test']);
-            return data['test'];
-        }
-    }).build();
 
 
     var checks = {
@@ -156,9 +36,9 @@ function initTable() {
             }
             var texture = data['texture'];
 
-            var wid = data['width'] == '' ? 0 : parseFloat(data['width'].replace(',', '.')).toFixed(1);
+            var wid = data['width']  ?  parseFloat(data['width'].replace(',', '.')).toFixed(1) : 0;
 
-            var hei = data['height'] == '' ? 0 : parseFloat(data['height'].replace(',', '.')).toFixed(1);
+            var hei = data['height']  ?  parseFloat(data['height'].replace(',', '.')).toFixed(1) : 0;
 
             //var minW = hei != 0 ? (hei < maxH && hei > minHeight ? minWidth : minHeight) : minWidth;
 
@@ -199,122 +79,182 @@ function initTable() {
                         return false;
                     }
                 }
-            } else {
-                //showMsg('ERROR');
-                return false;
-            }
-
-
+            };
+            eventOnChange();
         },
 
         width: function (data) {
-
             return checks.widthHeight(data, false);
-            //var maxW;
-            //var maxH;
-            //
-            //var staple = data['staple'];
-            //if(staple > 1){
-            //    maxW = maxWidth - indenCrosslinking;
-            //    maxH = maxHeight - indenCrosslinking;
-            //} else {
-            //    maxW = maxWidth;
-            //    maxH = maxHeight;
-            //}
-            //var texture = data['texture'];
-            //
-            //var wid = data['width'] == '' ? 0 : parseFloat(data['width'].replace(',', '.')).toFixed(1);
-            //
-            //var hei = data['height'] == '' ? 0 : parseFloat(data['height'].replace(',', '.')).toFixed(1);
-            //
-            ////var minW = hei != 0 ? (hei < maxH && hei > minHeight ? minWidth : minHeight) : minWidth;
-            //
-            //var minW = minWidth;
-            //var minH = minHeight;
-            //
-            //
-            //
-            //if(wid >= minW && wid <= maxW && (hei == 0 || hei <= maxHeight && hei >= Math.max(minH, minW))){
-            //    return true;
-            //} else if(!texture) {
-            //    if(hei == 0){
-            //        if(wid <= maxH && wid >= Math.min(minH, minW)){
-            //            return true;
-            //        } else {
-            //            return false;
-            //        }
-            //    } else {
-            //        if(hei <= maxW && wid <= maxH && wid >= (hei > Math.max(minH, minW) ? Math.min(minH, minW) : Math.max(minH, minW))){
-            //            return true;
-            //        } else {
-            //            return false;
-            //        }
-            //    }
-            //} else {
-            //    //showMsg('ERROR');
-            //    return false;
-            //}
-
-
         },
 
         height: function (data) {
             return checks.widthHeight(data, true);
-            //var maxW;
-            //var maxH;
-            //
-            //var staple = data['staple'];
-            //if(staple > 1){
-            //    maxW = maxWidth - indenCrosslinking;
-            //    maxH = maxHeight - indenCrosslinking;
-            //} else {
-            //    maxW = maxWidth;
-            //    maxH = maxHeight;
-            //}
-            //var texture = data['texture'];
-            //
-            //var hei = data['height'] == '' ? 0 : parseFloat(data['height'].replace(',', '.')).toFixed(1);
-            //
-            //var wid = data['width'] == '' ? 0 : parseFloat(data['width'].replace(',', '.')).toFixed(1);
-            //
-            //var minW = minWidth;
-            //var minH = minHeight;
-            //
-            //
-            //if(hei >= minH && hei <= maxH && (wid == 0 || wid <= maxWidth && wid >= Math.max(minH, minW))){
-            //    return true;
-            //} else if(!texture) {
-            //    if(wid == 0){
-            //        if(hei <= maxW && hei >= Math.min(minH, minW)){
-            //            return true;
-            //        } else {
-            //            return false;
-            //        }
-            //    } else {
-            //        if(wid <= maxH && hei <= maxW && hei >= (wid > Math.max(minH, minW) ? Math.min(minH, minW) : Math.max(minH, minW))){
-            //            return true;
-            //        } else {
-            //            return false;
-            //        }
-            //    }
-            //} else {
-            //    //showMsg('ERROR');
-            //    return false;
-            //}
-
         },
 
         thickness: function (data) {
-
+            eventOnChange();
         },
 
         count: function (data) {
-            if(parseInt(data.count) != data.count && data.count < 1){
+            //console.log(data['count'] < 1);
+            if(data['count'] < 1 || parseInt(data['count']) != data['count']){
                 //showMsg("Количество должно быть целым, а не " + data.count);
                 return false;
             }
+            eventOnChange();
         }
+
     };
+
+
+    //Создать таблицу в элементе
+    //аргумент - селектор
+
+    createTable('.fast_input').addCell({
+        type: 'caption',      //обязательно
+        edit: true,        //обязательно
+        required: false,   //обязательно
+        text: 'Название',  //обязательно
+        input: {           //не обязательно
+            tag : 'input',
+            type: 'text'
+        }
+
+    }).addCell({
+        type: 'width',
+        edit: true,
+        required: true,
+        text: 'Длинна(w)',
+        input: {
+            tag : 'input',
+            type: 'number'
+        },
+        validate : checks['width'],
+
+    }).addCell({
+        type: 'height',
+        edit: true,
+        required: true,
+        text: 'Ширина(h)',
+        input: {
+            tag : 'input',
+            type: 'number'
+        },
+        validate : checks['height'],
+    }).addCell({
+        type: 'thickness',
+        edit: false,
+        required: true,
+        text: 'Толщина',
+        default : thickness
+
+    }).addCell({
+        type: 'count',
+        edit: true,
+        required: true,
+        text: 'Кол-во',
+        input: {
+            tag : 'input',
+            type: 'number'
+        },
+        default: 1,
+        validate : checks['count']
+
+    }).addCell({
+        type: 'staple',
+        edit: true,
+        required: true,
+        text: 'Кратность',
+        input : {
+            tag : 'select',
+            options : ['1', '2', '3'] // подсчитать
+        },
+        validate : function (data){
+            var st = data['staple'];
+            data['thickness'] = (st * thickness);
+            console.log(data);
+            //console.log(st * thickness);
+            eventOnChange();
+        }
+    }).addCell({
+        type: 'top',
+        edit: true,
+        required: false,
+        text: 'В',
+        input : {
+            tag : 'select',
+            options : ['1', '2', '3'] // подсчитать
+        },
+
+
+    }).addCell({
+        type: 'bottom',
+        edit: true,
+        required: false,
+        text: 'Н',
+        input : {
+            tag : 'select',
+            options : ['1', '2', '3'] // подсчитать
+        },
+
+
+    }).addCell({
+        type: 'left',
+        edit: true,
+        required: false,
+        text: 'Л',
+        input : {
+            tag : 'select',
+            options : ['1', '2', '3'] // подсчитать
+        },
+
+
+    }).addCell({
+        type: 'right',
+        edit: true,
+        required: false,
+        text: 'П',
+        input : {
+            tag : 'select',
+            options : ['1', '2', '3'] // подсчитать
+        },
+
+
+    }).addCell({
+        type: 'texture',
+        edit: true,
+        required: true,
+        text: 'Текстура',
+        input : {
+            tag : 'input',
+            type : 'checkbox',
+
+            attrs : {
+                checked : 'checked'
+            }
+        }
+
+    }).delete(function(idx){
+
+        console.log(idx);
+
+    }).change(function(data){
+
+        console.log(data);
+
+    }).build();
+
+
+    //var o = {
+    //    '0' : {
+    //        'name' : 'name',
+    //        'dsde' : 'de'
+    //    },
+    //    '1' : {
+    //
+    //    }
+    //}
+
 
 
 }
